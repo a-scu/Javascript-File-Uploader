@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Uploader</title>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: monospace;
+      }
+      main {
+        display: flex;
+        min-height: 100vh;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: #777;
+      }
+      #files {
+        width: 50%;
+        padding: 5px;
+        background-color: #888;
+        border-radius: 5px;
+        outline: none;
+        text-align: center;
+      }
+      div span {
+        margin-top: 5px;
+      }
+      div {
+        display: flex;
+        margin-top: 10px;
+        padding: 5px;
+        width: 50%;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: #888;
+        border-radius: 5px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <input type="file" id="files" name="files" multiple />
+    </main>
+
+    <script>
+      const d = document,
+        $main = d.querySelector("main"),
+        $files = d.getElementById("files");
+
+      const uploader = (file) => {
+        const xhr = new XMLHttpRequest();
+        const formData = new FormData();
+        formData.append("file", file);
+
+        xhr.addEventListener("readystatechange", (e) => {
+          if (xhr.readyState !== 4) return;
+          if (xhr.status >= 200 && xhr.status < 300) {
+            let json = JSON.parse(xhr.responseText);
+            console.log(json);
+          } else console.error(`Error ${xhr.status}: ${xhr.statusText || "An error has ocurred"}`);
+        });
+
+        xhr.open("POST", "assets/uploader.php");
+        xhr.setRequestHeader("enc-type", "multipart/form-data");
+        xhr.send(formData);
+      };
+
+      const progress = (file) => {
+        const $progress = d.createElement("progress"),
+          $span = d.createElement("span"),
+          $div = d.createElement("div"),
+          fileReader = new FileReader();
+
+        $progress.value = 0;
+        $progress.max = 100;
+        fileReader.readAsDataURL(file);
+
+        $div.insertAdjacentElement("beforeend", $progress);
+        $div.insertAdjacentElement("beforeend", $span);
+        $main.append($div);
+
+        fileReader.addEventListener("progress", (e) => {
+          let progress = parseInt((e.loaded * 100) / e.total);
+          $progress.value = progress;
+          $span.innerHTML = `<b>${file.name} ${progress}%</b>`;
+        });
+
+        fileReader.addEventListener("loadend", (e) => uploader(file));
+      };
+
+      d.addEventListener("change", (e) => {
+        if (e.target === $files) {
+          Array.from(e.target.files).forEach((file) => progress(file));
+        }
+      });
+    </script>
+  </body>
+</html>
